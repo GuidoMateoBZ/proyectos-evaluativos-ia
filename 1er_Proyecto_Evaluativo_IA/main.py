@@ -26,8 +26,22 @@ ga = pygad.GA(
 ga.run()
 
 solucion, fitness, _ = ga.best_solution()
+print("==========================================")
+print("MEJOR FITNESS")
 
 print(f"Mejor fitness: {fitness:.2f} MW")
+print("==========================================")
+
+print("==========================================")
+
+print("SOLUCIÓN")
+
 molinos = convertir_cromosoma(solucion)
 
 imprimir_grilla(molinos)
+print("==========================================")
+print("==========================================")
+print("CANTIDAD DE GENERACIONES")
+
+print(f"Generaciones hasta solución: {ga.generations_completed}")
+print("==========================================")
