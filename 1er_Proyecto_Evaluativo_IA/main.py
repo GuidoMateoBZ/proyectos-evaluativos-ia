@@ -1,26 +1,40 @@
-import pygad ##
-from fitness import convertir_cromosoma, calcular_fitness, imprimir_grilla
+import pygad # Librería usada para AG
+from fitness import convertir_cromosoma, calcular_fitness, imprimir_grilla, contador_molinos
 
-##la convierto para usarlo con pygad
+# La convierto para usarlo con pygad
 def fitness_pygad(ga_instance,cromosoma,idx):
     molinos = convertir_cromosoma(cromosoma)
     return calcular_fitness(molinos)
 
 ga = pygad.GA(
-    num_generations=500, ##maximo de generaciones
-    sol_per_pop=100, ##por cada generacion son 100 individuos
-    num_parents_mating=50, ##50 parejas se reproducen por genracion
-    num_genes=50, ##cromosoma de 50 numeros (25 molinos x 2 corrdenadas)
-    gene_type=int,##coordenadas enteras
-    gene_space=range(0, 20), ##cada coordenada
-    fitness_func=fitness_pygad, ##la funcion fitneess
-    parent_selection_type="tournament", ##seleccion por torneo
-    K_tournament=3, ##el torneo se elige entre 3 individuos
-    crossover_type="two_points", ## cruce de dos puntos
-    mutation_type="random", ##mutacion aleatoria
-    mutation_probability=0.05, ## 5 % de probabildad de mutar cada gen
-    stop_criteria=["reach_53.25", "saturate_50"], ## para si hay 50 generaciones sin mejora
-    keep_elitism=5 ##los 5 mejores pasan a la siguiente generacion (la elite)
+
+    # Población
+    sol_per_pop = 100, # Por cada generación son 100 individuos
+
+    # Representación Cromosómica
+    num_genes = 50, # Cromosoma de 50 numeros (25 molinos x 2 coordenadas)
+    gene_type = int, # Coordenadas enteras
+    gene_space = range(0, 19), # Cada coordenada de la grilla 20x20
+
+    # Fitness
+    fitness_func = fitness_pygad, # La funcion fitness
+    
+    # Selección
+    parent_selection_type = "tournament", # Selección por torneo
+    K_tournament = 3, # El torneo se elige entre 3 individuos
+    keep_elitism = 5, # Los 5 mejores pasan a la siguiente generación (la elite)
+
+    # Crossover
+    crossover_type = "two_points", # Cruce de dos puntos
+    num_parents_mating = 50, # 50 parejas se reproducen por generación
+
+    # Mutación
+    mutation_type = "random", # Mutación aleatoria
+    mutation_probability = 0.05, # 5% de probabilidad de mutar cada gen
+    
+    # Criterios de parada
+    num_generations = 500, # Máximo de generaciones
+    stop_criteria = ["reach_53.25", "saturate_200"] # Para si hay 50 generaciones sin mejora
 )
 
 ga.run()
@@ -43,5 +57,6 @@ print("==========================================")
 print("==========================================")
 print("CANTIDAD DE GENERACIONES")
 
+print(f"Cantidad de molinos: {contador_molinos(molinos)}")
 print(f"Generaciones hasta solución: {ga.generations_completed}")
 print("==========================================")

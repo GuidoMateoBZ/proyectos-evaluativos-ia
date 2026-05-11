@@ -20,7 +20,7 @@ def contar_estela(molino, molinos):
     for otro in molinos:
         ##chequeo qe no sea el mismo molino 
         if otro == molino:
-            continue 
+            estela += 1
     ##este a oeste
         if (molino[0] == otro[0] and 0 < (molino[1] - otro[1]) <=3):
             estela +=1
@@ -37,6 +37,7 @@ def imprimir_grilla(molinos):
     for fila in grilla:
         print(' '.join(fila))
 
+
 ##calculo del fitness (segun lo que entendi del docu) Z = ∑ PiBase . max(0, 1 - β · wake(i,j))
 
 def calcular_fitness(molinos):
@@ -47,7 +48,9 @@ def calcular_fitness(molinos):
         energia_total += potencia
     return energia_total
 
-
+def contador_molinos(molinos):
+    set_molinos = set(molinos)
+    return len(set_molinos)
 
 
 molinos = convertir_cromosoma(cromosoma_prueba)
