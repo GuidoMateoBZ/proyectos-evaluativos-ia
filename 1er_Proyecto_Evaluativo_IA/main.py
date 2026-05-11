@@ -1,7 +1,7 @@
 import pygad
 import json
 import numpy as np
-from fitness import convertir_cromosoma, calcular_fitness, imprimir_grilla
+from fitness import convertir_cromosoma, calcular_fitness, imprimir_grilla, contador_molinos
 from graficos import generar_graficos
 
 def fitness_pygad(ga_instance, cromosoma, idx):
@@ -15,21 +15,36 @@ def on_generation(ga_instance):
     historial_fitness.append(mejor)
 
 ga = pygad.GA(
-    num_generations=500,
+    # Población
     sol_per_pop=100,
-    num_parents_mating=50,
+
+    # Representación Cromosómica
     num_genes=50,
     gene_type=int,
     gene_space=range(0, 20),
+
+    # Fitness
     fitness_func=fitness_pygad,
+
+    # Selección
     parent_selection_type="tournament",
     K_tournament=3,
+    keep_elitism=5,
+
+    # Crossover
     crossover_type="two_points",
+    num_parents_mating=50,
+
+    # Mutación
     mutation_type="random",
     mutation_probability=0.05,
+
+    # Criterios de parada
+    num_generations=500,
     stop_criteria=["reach_53.25", "saturate_50"],
+
+    # ✅ FIX: registrar el callback
     on_generation=on_generation,
-    keep_elitism=5
 )
 
 ga.run()
@@ -52,6 +67,7 @@ print("==========================================")
 
 print("==========================================")
 print("CANTIDAD DE GENERACIONES")
+print(f"Cantidad de molinos: {contador_molinos(molinos)}")
 print(f"Generaciones hasta solución: {ga.generations_completed}")
 print("==========================================")
 
@@ -59,15 +75,14 @@ print("==========================================")
 h = np.array(historial_fitness)
 n = len(h)
 
-## ventana para estadísticas finales: últimas 50 gen o todas si fueron menos
 ventana = min(50, n)
 
-## generación de convergencia: primera vez que supera el 99% del mejor valor
-idx_conv = np.argmax(h >= 0.99 * h[-1]) + 1  
+# ✅ FIX: el historial es ascendente, el óptimo está al final (h[-1])
+mejor_fitness = h[-1]
+idx_conv = int(np.argmax(h >= 0.99 * mejor_fitness)) + 1  # generación base-1
 
-## generación de mayor salto (solo tiene sentido si hubo más de 1 generación)
 if n > 1:
-    idx_salto = int(np.argmax(np.diff(h)) + 2)  ## +2: diff reduce índice en 1, y gen arranca en 1
+    idx_salto = int(np.argmax(np.diff(h)) + 2)
 else:
     idx_salto = 1
 
@@ -79,8 +94,8 @@ print(f"Mejora total:                             {h[-1] - h[0]:.4f} MW ({(h[-1]
 print(f"Media  (últimas {ventana} gen):            {np.mean(h[-ventana:]):.4f} MW")
 print("==========================================")
 print("FITNESS POR GENERACIÓN")
-for i, f in enumerate(historial_fitness, start=1):
-    print(f"Gen {i:>4}: {f:.4f} MW")
+for i, f_val in enumerate(historial_fitness, start=1):  # ✅ evitar shadowing de built-in `f`
+    print(f"Gen {i:>4}: {f_val:.4f} MW")
 print("==========================================")
 print(f"Desv. estándar (últimas {ventana} gen):    {np.std(h[-ventana:]):.4f} MW")
 print(f"Generación de mayor salto:                {idx_salto}")
