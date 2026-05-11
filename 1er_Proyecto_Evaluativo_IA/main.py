@@ -34,7 +34,7 @@ ga = pygad.GA(
     
     # Criterios de parada
     num_generations = 500, # Máximo de generaciones
-    stop_criteria = ["reach_53.25", "saturate_50"] # Para si hay 50 generaciones sin mejora
+    stop_criteria = ["reach_53.25", "saturate_50"] # Para si hay 50 generaciones sin mejora o encuentra un óptimo
 )
 
 ga.run()
