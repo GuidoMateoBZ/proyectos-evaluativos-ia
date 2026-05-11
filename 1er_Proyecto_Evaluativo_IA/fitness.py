@@ -15,25 +15,21 @@ def convertir_cromosoma(cromosoma):
     return molinos
 
 ## dado un molino x me devuelve los y molinos que estane en el area de su estela
-def contar_estela(molino, molinos):
-    idx_molino = molinos.index(molino)
+def contar_estela(idx, molinos):
+    molino = molinos[idx]
     estela = 0
-    for otro in molinos:
-        ##chequeo qe no sea el mismo molino 
-        if idx_molino == molinos.index(otro):
+    for i, otro in enumerate(molinos):
+        if i == idx:
             continue
-
-        # si el molino está en el mismo lugar
         if otro == molino:
             estela += 1
-
-        ##este a oeste
-        elif (molino[0] == otro[0] and 0 < (molino[1] - otro[1]) <=3):
-            estela +=1
-        ##norte a sur
+            continue
+        if (molino[0] == otro[0] and 0 < (molino[1] - otro[1]) <= 3):
+            estela += 1
         elif (molino[1] == otro[1] and 0 < (otro[0] - molino[0]) <= 3):
-            estela +=1
+            estela += 1
     return estela
+
 
 def imprimir_grilla(molinos):
     grilla = [['.' for _ in range(20)] for _ in range(20)]
@@ -49,8 +45,8 @@ def imprimir_grilla(molinos):
 
 def calcular_fitness(molinos):
     energia_total = 0
-    for molino in molinos:
-        estela = contar_estela(molino, molinos)
+    for i, molino in enumerate(molinos):
+        estela = contar_estela(i, molinos)
         potencia = P_BASE * max(0, 1 - BETA * estela)
         energia_total += potencia
     return energia_total

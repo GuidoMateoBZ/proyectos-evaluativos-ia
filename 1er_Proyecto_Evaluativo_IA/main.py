@@ -14,7 +14,7 @@ ga = pygad.GA(
     # Representación Cromosómica
     num_genes = 50, # Cromosoma de 50 numeros (25 molinos x 2 coordenadas)
     gene_type = int, # Coordenadas enteras
-    gene_space = range(0, 19), # Cada coordenada de la grilla 20x20
+    gene_space = range(0, 20), # Cada coordenada de la grilla 20x20
 
     # Fitness
     fitness_func = fitness_pygad, # La funcion fitness
