@@ -2,7 +2,8 @@ import pygad
 import json
 import numpy as np
 from fitness import convertir_cromosoma, calcular_fitness, imprimir_grilla, contador_molinos
-from graficos import generar_graficos
+from iterativo import experimentar, graficar_experimento, imprimir_resumen
+
 
 def fitness_pygad(ga_instance, cromosoma, idx):
     molinos = convertir_cromosoma(cromosoma)
@@ -47,6 +48,9 @@ ga = pygad.GA(
     on_generation=on_generation,
 )
 
+# ga.run()
+
+# for i in range(30):
 ga.run()
 
 with open("historial_fitness.json", "w") as f:
@@ -101,5 +105,11 @@ print(f"Generación de mayor salto:                {idx_salto}")
 print(f"Generación de convergencia (~99% óptimo): {idx_conv}")
 print("==========================================")
 
-## ---- GRÁFICOS ----
-generar_graficos(historial=historial_fitness)
+
+
+
+N_CORRIDAS = 30
+
+resultados = experimentar(n_corridas=N_CORRIDAS)
+imprimir_resumen(resultados)
+graficar_experimento(resultados)
