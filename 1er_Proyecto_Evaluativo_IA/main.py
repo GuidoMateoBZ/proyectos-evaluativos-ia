@@ -43,7 +43,7 @@ ga = pygad.GA(
     num_generations=500,
     stop_criteria=["reach_53.25", "saturate_50"],
 
-    # ✅ FIX: registrar el callback
+  
     on_generation=on_generation,
 )
 
@@ -77,7 +77,6 @@ n = len(h)
 
 ventana = min(50, n)
 
-# ✅ FIX: el historial es ascendente, el óptimo está al final (h[-1])
 mejor_fitness = h[-1]
 idx_conv = int(np.argmax(h >= 0.99 * mejor_fitness)) + 1  # generación base-1
 
@@ -94,7 +93,7 @@ print(f"Mejora total:                             {h[-1] - h[0]:.4f} MW ({(h[-1]
 print(f"Media  (últimas {ventana} gen):            {np.mean(h[-ventana:]):.4f} MW")
 print("==========================================")
 print("FITNESS POR GENERACIÓN")
-for i, f_val in enumerate(historial_fitness, start=1):  # ✅ evitar shadowing de built-in `f`
+for i, f_val in enumerate(historial_fitness, start=1):  # evitar shadowing de built-in `f`
     print(f"Gen {i:>4}: {f_val:.4f} MW")
 print("==========================================")
 print(f"Desv. estándar (últimas {ventana} gen):    {np.std(h[-ventana:]):.4f} MW")
