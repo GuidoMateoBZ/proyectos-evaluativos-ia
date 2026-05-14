@@ -1,115 +1,181 @@
-import pygad
-import json
-import numpy as np
-from fitness import convertir_cromosoma, calcular_fitness, imprimir_grilla, contador_molinos
-from iterativo import experimentar, graficar_experimento, imprimir_resumen
+"""
+Pipeline de experimentación comparativa — Algoritmos Genéticos para Wind Farm.
 
+Uso:
+    python main.py                    # suite completa (default)
+    python main.py --modo base        # una sola config base, 30 corridas
+    python main.py --modo poblacion   # compara tamaños de población
+    python main.py --corridas 10      # reduce N corridas (pruebas rápidas)
+    python main.py --cargar resultados_suite.json  # reanalizar sin re-ejecutar
+"""
 
-def fitness_pygad(ga_instance, cromosoma, idx):
-    molinos = convertir_cromosoma(cromosoma)
-    return calcular_fitness(molinos)
+import argparse
+import sys
+import matplotlib
+import matplotlib.pyplot as plt
 
-historial_fitness = []
-
-def on_generation(ga_instance):
-    mejor = ga_instance.best_solution()[1]
-    historial_fitness.append(mejor)
-
-ga = pygad.GA(
-    # Población
-    sol_per_pop=100,
-
-    # Representación Cromosómica
-    num_genes=50,
-    gene_type=int,
-    gene_space=range(0, 20),
-
-    # Fitness
-    fitness_func=fitness_pygad,
-
-    # Selección
-    parent_selection_type="tournament",
-    K_tournament=3,
-    keep_elitism=5,
-
-    # Crossover
-    crossover_type="two_points",
-    num_parents_mating=50,
-
-    # Mutación
-    mutation_type="random",
-    mutation_probability=0.05,
-
-    # Criterios de parada
-    num_generations=500,
-    stop_criteria=["reach_53.25", "saturate_50"],
-
-  
-    on_generation=on_generation,
+from ag.configuraciones import (
+    CONFIG_BASE,
+    CONFIGS_POBLACION,
+    CONFIGS_MUTACION,
+    CONFIGS_CRUCE,
+    CONFIGS_SELECCION,
+    CONFIGS_ELITISMO,
+)
+from ag.ejecucion   import ejecutar_config, ejecutar_suite
+from ag.estadisticas import tabla_comparativa, matriz_heatmap
+from ag.graficos    import (
+    graficar_panel_config,
+    graficar_convergencia_comparativa,
+    graficar_boxplot_fitness,
+    graficar_boxplot_generaciones,
+    graficar_barras_comparativas,
+    graficar_heatmap,
+)
+from ag.exportacion import (
+    guardar_json,
+    cargar_json,
+    guardar_csv_corridas,
+    guardar_csv_resumen,
+    imprimir_tabla,
 )
 
-# ga.run()
-
-# for i in range(30):
-ga.run()
-
-with open("historial_fitness.json", "w") as f:
-    json.dump(historial_fitness, f)
-
-solucion, fitness, _ = ga.best_solution()
-molinos = convertir_cromosoma(solucion)
-
-print("==========================================")
-print("MEJOR FITNESS")
-print(f"Mejor fitness: {fitness:.2f} MW")
-print("==========================================")
-
-print("==========================================")
-print("SOLUCIÓN")
-imprimir_grilla(molinos)
-print("==========================================")
-
-print("==========================================")
-print("CANTIDAD DE GENERACIONES")
-print(f"Cantidad de molinos: {contador_molinos(molinos)}")
-print(f"Generaciones hasta solución: {ga.generations_completed}")
-print("==========================================")
-
-## ---- ANÁLISIS ESTADÍSTICO ----
-h = np.array(historial_fitness)
-n = len(h)
-
-ventana = min(50, n)
-
-mejor_fitness = h[-1]
-idx_conv = int(np.argmax(h >= 0.99 * mejor_fitness)) + 1  # generación base-1
-
-if n > 1:
-    idx_salto = int(np.argmax(np.diff(h)) + 2)
-else:
-    idx_salto = 1
-
-print("==========================================")
-print("ANÁLISIS ESTADÍSTICO")
-print(f"Fitness inicial (gen 1):                  {h[0]:.4f} MW")
-print(f"Fitness final   (gen {n}):                {h[-1]:.4f} MW")
-print(f"Mejora total:                             {h[-1] - h[0]:.4f} MW ({(h[-1]-h[0])/h[0]*100:.2f}%)")
-print(f"Media  (últimas {ventana} gen):            {np.mean(h[-ventana:]):.4f} MW")
-print("==========================================")
-print("FITNESS POR GENERACIÓN")
-for i, f_val in enumerate(historial_fitness, start=1):  # evitar shadowing de built-in `f`
-    print(f"Gen {i:>4}: {f_val:.4f} MW")
-print("==========================================")
-print(f"Desv. estándar (últimas {ventana} gen):    {np.std(h[-ventana:]):.4f} MW")
-print(f"Generación de mayor salto:                {idx_salto}")
-print(f"Generación de convergencia (~99% óptimo): {idx_conv}")
-print("==========================================")
+matplotlib.use("Agg")   # sin ventanas interactivas; guardar directo a PNG
 
 
+SUITES_DISPONIBLES = {
+    "base":      [CONFIG_BASE],
+    "poblacion": CONFIGS_POBLACION,
+    "mutacion":  CONFIGS_MUTACION,
+    "cruce":     CONFIGS_CRUCE,
+    "seleccion": CONFIGS_SELECCION,
+    "elitismo":  CONFIGS_ELITISMO,
+}
 
 
-N_CORRIDAS = 30
+def _parsear_args():
+    parser = argparse.ArgumentParser(
+        description="Framework de experimentación comparativa para AG Wind Farm"
+    )
+    parser.add_argument(
+        "--modo", default="base",
+        choices=list(SUITES_DISPONIBLES.keys()),
+        help="Grupo de configuraciones a comparar (default: base)",
+    )
+    parser.add_argument(
+        "--corridas", type=int, default=30,
+        help="Número de corridas independientes por configuración (default: 30)",
+    )
+    parser.add_argument(
+        "--semilla", type=int, default=42,
+        help="Semilla base para la secuencia de corridas (default: 42)",
+    )
+    parser.add_argument(
+        "--cargar", type=str, default=None,
+        metavar="ARCHIVO.json",
+        help="Reusar resultados previamente guardados (omite ejecución)",
+    )
+    parser.add_argument(
+        "--salida", type=str, default="resultados",
+        help="Directorio de salida para figuras y CSV (default: resultados/)",
+    )
+    return parser.parse_args()
 
-resultados = experimentar(n_corridas=N_CORRIDAS)
-imprimir_resumen(resultados)
-graficar_experimento(resultados)
+
+def _pipeline(resultados_suite: list[dict], directorio: str, modo: str) -> None:
+    """Analiza, visualiza y exporta una suite de resultados."""
+    from pathlib import Path
+    import os
+
+    outdir = Path(directorio) / modo
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    # Tabla en consola
+    imprimir_tabla(resultados_suite)
+
+    # Exportar datos
+    guardar_json(resultados_suite,            outdir / "suite.json")
+    guardar_csv_corridas(resultados_suite,    outdir / "corridas.csv")
+    guardar_csv_resumen(resultados_suite,     outdir / "resumen.csv")
+
+    # Figuras por configuración individual
+    for rc in resultados_suite:
+        nombre = rc["config"].nombre
+        fig = graficar_panel_config(rc)
+        fig.savefig(outdir / f"panel_{nombre}.png", dpi=150,
+                    bbox_inches="tight", facecolor=fig.get_facecolor())
+        plt.close(fig)
+        print(f"[OK] Panel guardado -> '{outdir / ('panel_' + nombre + '.png')}'")
+
+    # Figuras comparativas (solo si hay más de una config)
+    if len(resultados_suite) > 1:
+        titulo_modo = f"Suite: {modo.upper()}"
+
+        fig = graficar_convergencia_comparativa(
+            resultados_suite,
+            titulo=f"Convergencia Comparativa — {titulo_modo}",
+        )
+        fig.savefig(outdir / "comp_convergencia.png", dpi=150,
+                    bbox_inches="tight", facecolor=fig.get_facecolor())
+        plt.close(fig)
+
+        fig = graficar_boxplot_fitness(
+            resultados_suite,
+            titulo=f"Fitness Final — {titulo_modo}",
+        )
+        fig.savefig(outdir / "comp_boxplot_fitness.png", dpi=150,
+                    bbox_inches="tight", facecolor=fig.get_facecolor())
+        plt.close(fig)
+
+        fig = graficar_boxplot_generaciones(
+            resultados_suite,
+            titulo=f"Generaciones hasta Convergencia — {titulo_modo}",
+        )
+        fig.savefig(outdir / "comp_boxplot_generaciones.png", dpi=150,
+                    bbox_inches="tight", facecolor=fig.get_facecolor())
+        plt.close(fig)
+
+        fig = graficar_barras_comparativas(
+            resultados_suite,
+            titulo=f"Fitness Medio ± Std — {titulo_modo}",
+        )
+        fig.savefig(outdir / "comp_barras_fitness.png", dpi=150,
+                    bbox_inches="tight", facecolor=fig.get_facecolor())
+        plt.close(fig)
+
+        fig = graficar_barras_comparativas(
+            resultados_suite,
+            metrica="gen_media",
+            error_metrica="gen_std",
+            titulo=f"Generaciones Medias ± Std — {titulo_modo}",
+            ylabel="Generaciones medias",
+        )
+        fig.savefig(outdir / "comp_barras_generaciones.png", dpi=150,
+                    bbox_inches="tight", facecolor=fig.get_facecolor())
+        plt.close(fig)
+
+    print(f"\n[OK] Pipeline completado. Resultados en: '{outdir.resolve()}'")
+
+
+def main():
+    args = _parsear_args()
+
+    if args.cargar:
+        print(f"[INFO] Cargando resultados desde '{args.cargar}' ...")
+        resultados_suite = cargar_json(args.cargar)
+        modo = "cargado"
+    else:
+        configs = SUITES_DISPONIBLES[args.modo]
+        print(f"[INFO] Modo: {args.modo}  |  Configs: {len(configs)}  |  Corridas: {args.corridas}")
+        resultados_suite = ejecutar_suite(
+            configs,
+            n_corridas=args.corridas,
+            semilla_base=args.semilla,
+        )
+        modo = args.modo
+
+    _pipeline(resultados_suite, args.salida, modo)
+
+
+if __name__ == "__main__":
+    main()

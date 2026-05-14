@@ -1,0 +1,4 @@
+rank,nombre,n_corridas,fit_media,fit_mediana,fit_std,fit_min,fit_max,fit_p25,fit_p75,gen_media,gen_mediana,gen_std,gen_min,gen_max,tiempo_media,tiempo_total,tasa_convergencia
+1,Pop_050,30,53.25,53.25,0.0,53.25,53.25,53.25,53.25,8.03,9.0,3.23,2,14,0.12,3.6,1.0
+2,Pop_100,30,53.25,53.25,0.0,53.25,53.25,53.25,53.25,8.17,8.5,3.41,3,17,0.2527,7.58,1.0
+3,Pop_200,30,53.25,53.25,0.0,53.25,53.25,53.25,53.25,8.27,7.0,4.89,1,21,0.7226,21.68,1.0
