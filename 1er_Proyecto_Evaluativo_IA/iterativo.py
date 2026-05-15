@@ -1,6 +1,7 @@
 import pygad
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 from fitness import convertir_cromosoma, calcular_fitness, contador_molinos
 
 
@@ -47,8 +48,11 @@ def experimentar(n_corridas: int = 10) -> list[dict]:
             hist_promedio.append(float(np.mean(fits)))
             hist_std.append(float(np.std(fits)))
 
+        start_time = time.time()
         ga = _construir_ga(on_generation,poblacion)
         ga.run()
+        end_time = time.time()
+        duracion = end_time - start_time
 
         solucion, fitness, _ = ga.best_solution()
         molinos = convertir_cromosoma(solucion)
@@ -61,12 +65,14 @@ def experimentar(n_corridas: int = 10) -> list[dict]:
             "historial_mejor"  : hist_mejor,
             "historial_promedio": hist_promedio,
             "historial_std"    : hist_std,
-            "poblacion":poblacion
+            "poblacion"        : poblacion,
+            "tiempo"           : round(duracion, 4)
         }
         resultados.append(resultado)
 
         print(f"  Fitness:     {fitness:.4f} MW")
         print(f"  Generaciones:{ga.generations_completed}")
+        print(f"  Tiempo:      {duracion:.2f} s")
         print(f"  Molinos:     {contador_molinos(molinos)}")
 
     return resultados
@@ -146,7 +152,7 @@ def graficar_experimento(resultados: list[dict], guardar: bool = True):
     hist_best = resultados[idx_mejor]["historial_mejor"]
     ax1.plot(range(1, len(hist_best) + 1), hist_best,
              color=C_BEST, linewidth=2.5, alpha=1.0, zorder=4,
-             label=f"★ Corrida {mejor_r['corrida']}  ({mejor_r['mejor_fitness']:.4f} MW)")
+             label=f"* Corrida {mejor_r['corrida']}  ({mejor_r['mejor_fitness']:.4f} MW)")
 
     # Curva de media global
     ax1.plot(gens_media, media_gen,
@@ -172,7 +178,7 @@ def graficar_experimento(resultados: list[dict], guardar: bool = True):
     if guardar:
         fig1.savefig("exp_convergencia.png", dpi=150, bbox_inches="tight",
                      facecolor=fig1.get_facecolor())
-        print("[OK] Figura 1 guardada -> 'exp_convergencia.png'")
+        print(f"Grafico guardado: exp_convergencia.png")
 
     plt.show(block=True)
     plt.close(fig1)
@@ -276,10 +282,65 @@ def graficar_experimento(resultados: list[dict], guardar: bool = True):
     if guardar:
         fig2.savefig("exp_boxplot.png", dpi=150, bbox_inches="tight",
                      facecolor=fig2.get_facecolor())
-        print("[OK] Figura 2 guardada -> 'exp_boxplot.png'")
+        print(f"Grafico guardado: exp_boxplot.png")
 
     plt.show(block=True)
     plt.close(fig2)
+
+    # Grafico de eficiencia: Tiempo vs Generaciones
+    tiempos = [r["tiempo"] for r in resultados]
+    gens    = [r["generaciones"] for r in resultados]
+    ids     = [r["corrida"] for r in resultados]
+
+    fig3, ax3 = plt.subplots(figsize=(12, 6), facecolor=BG)
+    fig3.subplots_adjust(left=0.08, right=0.92, top=0.85, bottom=0.15)
+    _base_ax(ax3, f"Eficiencia por Corrida: Tiempo vs Generaciones")
+
+    x = np.arange(len(ids))
+    width = 0.35
+
+    ax3_2 = ax3.twinx() # Segundo eje para el tiempo
+
+    rects1 = ax3.bar(x - width/2, gens, width, label='Generaciones', color=C_BOX, alpha=0.8)
+    rects2 = ax3_2.bar(x + width/2, tiempos, width, label='Tiempo (s)', color=C_MEAN, alpha=0.8)
+
+    ax3.set_xlabel('Nro. de Corrida', fontsize=11)
+    ax3.set_ylabel('Generaciones', color=C_BOX, fontsize=11, fontweight='bold')
+    ax3_2.set_ylabel('Tiempo (segundos)', color=C_MEAN, fontsize=11, fontweight='bold')
+    
+    ax3.set_xticks(x)
+    ax3.set_xticklabels(ids)
+
+    # Añadir valores sobre las barras
+    def autolabel(rects, ax, color):
+        for rect in rects:
+            height = rect.get_height()
+            ax.annotate(f'{height:.1f}' if height < 100 else f'{int(height)}',
+                        xy=(rect.get_x() + rect.get_width() / 2, height),
+                        xytext=(0, 3), 
+                        textcoords="offset points",
+                        ha='center', va='bottom', fontsize=8, color=color, fontweight='bold')
+
+    autolabel(rects1, ax3, C_BOX)
+    autolabel(rects2, ax3_2, C_MEAN)
+
+    # Combinar leyendas
+    lines, labels = ax3.get_legend_handles_labels()
+    lines2, labels2 = ax3_2.get_legend_handles_labels()
+    ax3.legend(lines + lines2, labels + labels2, loc='upper left', framealpha=0.3)
+
+    fig3.suptitle(
+        f"Análisis de Desempeño Temporal  ·  Media: {np.mean(tiempos):.2f}s / {np.mean(gens):.1f} gen",
+        color=C_TEXT, fontsize=12, fontweight="bold"
+    )
+
+    if guardar:
+        fig3.savefig("exp_tiempo_generaciones.png", dpi=150, bbox_inches="tight",
+                     facecolor=fig3.get_facecolor())
+        print(f"Grafico guardado: exp_tiempo_generaciones.png")
+
+    plt.show(block=True)
+    plt.close(fig3)
 
 
 
@@ -287,20 +348,21 @@ def graficar_experimento(resultados: list[dict], guardar: bool = True):
 def imprimir_resumen(resultados: list[dict]):
     fs = [r["mejor_fitness"] for r in resultados]
     gs = [r["generaciones"]  for r in resultados]
+    ts = [r["tiempo"]        for r in resultados]
     idx_mejor = int(np.argmax(fs))
 
-    print("\n" + "="*52)
+    print("\n" + "="*70)
     print("RESUMEN DEL EXPERIMENTO")
-    print("="*52)
-    print(f"{'Corrida':>8} {'Fitness (MW)':>14} {'Generaciones':>13} {'Molinos':>8}")
-    print("-"*52)
+    print("="*70)
+    print(f"{'Corrida':>8} {'Fitness (MW)':>14} {'Generaciones':>13} {'Tiempo (s)':>12} {'Molinos':>8}")
+    print("-"*70)
     for r in resultados:
-        marca = " " if resultados.index(r) == idx_mejor else ""
+        marca = " *" if resultados.index(r) == idx_mejor else ""
         print(f"{r['corrida']:>8} {r['mejor_fitness']:>14.4f} "
-              f"{r['generaciones']:>13} {r['n_molinos']:>8}{marca}")
-    print("="*52)
-    print(f"{'Promedio':>8} {np.mean(fs):>14.4f} {np.mean(gs):>13.1f}")
-    print(f"{'Std':>8} {np.std(fs):>14.4f} {np.std(gs):>13.1f}")
-    print(f"{'Máximo':>8} {np.max(fs):>14.4f} {np.max(gs):>13}")
-    print(f"{'Mínimo':>8} {np.min(fs):>14.4f} {np.min(gs):>13}")
-    print("="*52)
+              f"{r['generaciones']:>13} {r['tiempo']:>12.2f} {r['n_molinos']:>8}{marca}")
+    print("="*70)
+    print(f"{'Promedio':>8} {np.mean(fs):>14.4f} {np.mean(gs):>13.1f} {np.mean(ts):>12.2f}")
+    print(f"{'Std':>8} {np.std(fs):>14.4f} {np.std(gs):>13.1f} {np.std(ts):>12.2f}")
+    print(f"{'Maximo':>8} {np.max(fs):>14.4f} {np.max(gs):>13} {np.max(ts):>12.2f}")
+    print(f"{'Minimo':>8} {np.min(fs):>14.4f} {np.min(gs):>13} {np.min(ts):>12.2f}")
+    print("="*70)
