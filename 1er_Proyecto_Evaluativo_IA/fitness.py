@@ -41,7 +41,7 @@ def imprimir_grilla(molinos):
         print(' '.join(fila))
 
 
-##calculo del fitness (segun lo que entendi del docu) Z = ∑ PiBase . max(0, 1 - β · wake(i,j))
+# Z = ∑ PiBase . max(0, 1 - β · wake(i,j))
 
 def calcular_fitness(molinos):
     energia_total = 0
