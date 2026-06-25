@@ -7,6 +7,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 
 # Recargar dataset
 cancer = load_breast_cancer()
@@ -40,7 +41,7 @@ modelos = {
     "Árbol de Decisión":   (DecisionTreeClassifier(random_state=42), False),
     "Random Forest":       (RandomForestClassifier(n_estimators=100, random_state=42), False),
     "Red Neuronal (MLP)":  (MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=1000, random_state=42), True),
-    "SVM":                 (SVC(random_state=42), True),
+    "KNN":                 (KNeighborsClassifier(),True)
 }
 
 print("\n" + "="*55)
