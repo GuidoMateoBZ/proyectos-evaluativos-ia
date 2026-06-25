@@ -23,7 +23,7 @@ X = df.drop(columns=['target'])
 y = df['target']
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.3, random_state=42, stratify=y
+    X, y, test_size=0.2, random_state=42, stratify=y
 )
 
 # Escalar los datos ( para Regresión Logística, MLP y KNN)
@@ -31,7 +31,7 @@ scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-# 5. Entrenar al menos cinco modelos
+# 5. Entrenar cinco modelos
 
 modelos = {
     "Regresión Logística": LogisticRegression(random_state=42, max_iter=1000),
@@ -72,7 +72,9 @@ print("\n")
 mejor_modelo_nombre = df_resultados['F1-Score'].idxmax()
 mejor_modelo = modelos[mejor_modelo_nombre]
 
-print(f"--- 7. Matriz de Confusión: {mejor_modelo_nombre} ---")
+print(f"Mejor Moodelo según F1: {mejor_modelo_nombre}")
+
+print(f"--- 7. Matriz de Confusión del Modelo: {mejor_modelo_nombre} ---")
 X_test_cm = X_test_scaled if mejor_modelo_nombre in ["Regresión Logística", "Red Neuronal (MLP)", "KNN"] else X_test
 
 disp = ConfusionMatrixDisplay.from_estimator(
@@ -114,7 +116,7 @@ plt.show()
 # 10. Entrenar árbol interpretable reducido 
 
 print("--- 10. Árbol de Decisión Interpretable (Reducido) ---")
-# Limitamos la profundidad a 2 para facilitar la lectura de reglas
+# profundidad a 2 para facilitar la lectura de reglas
 arbol_reducido = DecisionTreeClassifier(max_depth=2, random_state=42)
 arbol_reducido.fit(X_train, y_train)
 
